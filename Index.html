@@ -1,0 +1,97 @@
+<?php
+// Mengecek jika form telah disubmit
+if (isset($_POST['submit'])) {
+    // Mengambil nilai id_user dari form
+    $id_user = $_POST['id_user'];
+
+    // API key yang Anda dapatkan
+    $token = "MjFRanpESTgrSkxJbzFEOVgwUkh1SUUwdFNmazZUaDd4Ri9JK1p5R0JPTVdiYlcya1pINFBuU25qRzZRYk8zZHJielB0N21KdzVLUlBOcTk4NnRvcjJ2clp5cGhVd0pTMnQ4T2NCZFV2VWR0YmRnYmhxUmlST0JWekNQUHBQZ1BobUJmUEkxd0ZkalVNUlpFUEIrdEowd25EOVprL04yeEZZS3p4cC9GZUtzVmZyOXFWR1I0bVJCaFR0VjZiNkRR"; // Ganti dengan API key Anda
+
+    // Header untuk autentikasi
+    $header = array(
+        "Authorization: Bearer " . $token
+    );
+
+    // Menyusun query parameter id_user
+    $query = http_build_query(
+        array("id_user" => $id_user)
+    );
+
+    // Inisialisasi cURL
+    $ch = curl_init();
+
+    // Menentukan URL dengan query string yang sudah dibangun
+    curl_setopt($ch, CURLOPT_URL, "https://bukaolshop.net/api/v1/member/saldo?" . $query);
+
+    // Menyertakan header Authorization
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+
+    // Mengatur cURL untuk mengembalikan hasil response
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    // Eksekusi request dan menyimpan hasilnya
+    $hasil = curl_exec($ch);
+
+    // Menutup sesi cURL
+    curl_close($ch);
+
+    // Mengonversi hasil JSON menjadi array PHP
+    $responseData = json_decode($hasil, true);
+}
+?>
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cari Saldo Member</title>
+</head>
+<body>
+    <h1>Cari Saldo Member Berdasarkan ID User</h1>
+
+    <!-- Form untuk mencari saldo berdasarkan ID User -->
+    <form method="POST" action="">
+        <label for="id_user">Masukkan ID User:</label>
+        <input type="text" id="id_user" name="id_user" required>
+        <button type="submit" name="submit">Cari</button>
+    </form>
+
+    <hr>
+
+    <?php
+    // Jika data berhasil ditemukan
+    if (isset($responseData) && $responseData['code'] == 200) {
+        // Menampilkan informasi saldo member
+        echo "<h2>Detail Saldo Member</h2>";
+        echo "<p><strong>ID User:</strong> " . $responseData['id_user'] . "</p>";
+        echo "<p><strong>Email:</strong> " . $responseData['email_user'] . "</p>";
+        echo "<p><strong>Nama:</strong> " . $responseData['nama_user'] . "</p>";
+        echo "<p><strong>Transaksi Terakhir:</strong> " . $responseData['transaksi_terakhir'] . "</p>";
+        echo "<p><strong>Jumlah Saldo:</strong> " . number_format($responseData['jumlah_saldo'], 0, ',', '.') . " IDR</p>";
+
+        // Menampilkan riwayat saldo jika ada
+        if (!empty($responseData['riwayat_saldo'])) {
+            echo "<h3>Riwayat Saldo</h3>";
+            foreach ($responseData['riwayat_saldo'] as $riwayat) {
+                echo "<p><strong>Informasi:</strong> " . $riwayat['informasi_catatan'] . "</p>";
+                echo "<p><strong>Jumlah Dana:</strong> " . number_format($riwayat['jumlah_dana'], 0, ',', '.') . " IDR</p>";
+                echo "<p><strong>Tanggal:</strong> " . $riwayat['tanggal'] . "</p>";
+            }
+        } else {
+            echo "<p><strong>Riwayat saldo tidak tersedia.</strong></p>";
+        }
+    } elseif (isset($responseData) && $responseData['code'] == 400) {
+        // Menampilkan pesan error jika ID User tidak ditemukan
+        echo "<p><strong>Kesalahan:</strong> Pastikan ID User yang dimasukkan valid.</p>";
+    } elseif (isset($responseData) && $responseData['code'] == 404) {
+        // Menampilkan pesan jika data tidak ditemukan
+        echo "<p><strong>Data tidak ditemukan</strong> untuk ID User yang diberikan.</p>";
+    } elseif (isset($responseData) && $responseData['code'] != 200) {
+        // Menampilkan pesan kesalahan lainnya
+        echo "<p><strong>Terjadi kesalahan saat mengakses API. Coba lagi nanti.</strong></p>";
+    }
+    ?>
+
+</body>
+</html>
